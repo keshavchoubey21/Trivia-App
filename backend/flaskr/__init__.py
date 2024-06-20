@@ -56,7 +56,6 @@ def create_app(test_config=None):
     @app.route('/categories')
     def get_catagories():
         categories = Category.query.all()
-        print(categories)
 
         if len(categories) == 0:
             abort(404)
@@ -86,8 +85,8 @@ def create_app(test_config=None):
     Clicking on the page numbers should update the questions.
     """
 
-    @app.route('/questions/<int:page>', methods=["GET"])
-    def get_questions(page):
+    @app.route('/questions', methods=["GET"])
+    def get_questions():
         try:
             questions = Question.query.all()
             total_questions = len(questions)
@@ -131,7 +130,7 @@ def create_app(test_config=None):
                 }
             )
         except:
-            abort(400)
+            abort(404)
 
 
     """
@@ -145,41 +144,45 @@ def create_app(test_config=None):
     of the questions list in the "List" tab.
     """
 
-    """
-    @TODO:
-    Create a POST endpoint to get questions based on a search term.
-    It should return any questions for whom the search term
-    is a substring of the question.
-
-    TEST: Search by any phrase. The questions list will update to include
-    only question that include that string within their question.
-    Try using the word "title" to start.
-    """
-
-    @app.route('/question', methods=["POST"])
+    @app.route('/questions', methods=["POST"])
     def add_question():
-        request = request.get_json()
+        body = request.get_json()
         try:
-            if 'searchTerm' not in request:
-               add_question = Question(question=request.get('question'), answer=request.get('answer'), difficulty=request.get('difficulty'), category=request.get('category'))
-               add_question.insert()
+            add_question = Question(question=body.get('question'), answer=body.get('answer'), difficulty=body.get('difficulty'), category=body.get('category'))
+            add_question.insert()
             
-               return jsonify(
-                    {
+            return jsonify(
+                {
                     'success': True
-                    }
-                )
-            else:
-                search_term = request.get('searchTerm')
-                questions = Question.query.filter(Question.question.ilike('%' + search_term + '%')).all()
-                return jsonify({
-                    'success': True,
-                    'questions': questions,
-                    'totalQuestion': len(questions),
-                    'currentCategory': request.get('category')
-                })
+                }, 200
+            )
         except:
             abort(400)
+
+
+
+    @app.route('/search', methods=["POST"])
+    def search_question():
+        body = request.get_json()
+        search_term = body.get('searchTerm')
+
+        if search_term is None:
+            abort(404)
+
+        questions = Question.query.filter(
+            Question.question.ilike('%'+search_term+'%')).all()
+
+        if questions is None:
+            abort(404)
+            
+        currentQuestions = paginate_questions(request, questions)
+        return jsonify({
+            'success': True,
+            'questions': currentQuestions,
+            'total_questions': len(questions)
+        }), 200
+            
+       
 
 
     """
@@ -191,7 +194,7 @@ def create_app(test_config=None):
     category to be shown.
     """
 
-    @app.route('/categories/<int:id>/questions')
+    @app.route('/categories/<int:id>/questions', methods=["GET"])
     def get_questions_by_category(id):
         try:
             questions = Question.query.filter(Question.category == id).all()
@@ -200,12 +203,12 @@ def create_app(test_config=None):
 
             return jsonify({
                 'success': True,
-                'questions': questions,
+                'questions': paginate_questions(request, selection=questions),
                 'total_questions': len(questions),
                 'current_category': id
             })
         except:
-            abort(400)
+            abort(404)
             
     
 
