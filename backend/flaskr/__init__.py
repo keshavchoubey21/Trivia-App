@@ -53,7 +53,7 @@ def create_app(test_config=None):
     Create an endpoint to handle GET requests
     for all available categories. - done
     """
-    @app.route('/categories')
+    @app.route('/categories', methods=['GET'])
     def get_catagories():
         categories = Category.query.all()
 
@@ -172,24 +172,28 @@ def create_app(test_config=None):
 
     @app.route('/search', methods=["POST"])
     def search_question():
-        body = request.get_json()
-        search_term = body.get('searchTerm')
+        
+        try:
+            body = request.get_json()
+            search_term = body.get('searchTerm')
+            print(search_term)
+            if search_term:
+                questions = Question.query.filter(Question.question.ilike('%'+search_term+'%')).all()
 
-        if search_term is None:
-            abort(404)
-
-        questions = Question.query.filter(
-            Question.question.ilike('%'+search_term+'%')).all()
-
-        if questions is None:
-            abort(404)
+                if len(questions) ==0:
+                    abort(404)
             
-        currentQuestions = paginate_questions(request, questions)
-        return jsonify({
-            'success': True,
-            'questions': currentQuestions,
-            'total_questions': len(questions)
-        }), 200
+                currentQuestions = paginate_questions(request, questions)
+                return jsonify({
+                    'success': True,
+                    'questions': currentQuestions,
+                    'total_questions': len(questions)
+                })
+            else:
+                abort(404)
+        except:
+            abort(404)
+        
             
        
 
@@ -292,6 +296,10 @@ def create_app(test_config=None):
     @app.errorhandler(400)
     def bad_request(error):
         return jsonify({"success": False, "error": 400, "message": "bad request"}), 400
+    
+    @app.errorhandler(500)
+    def server_error(error):
+        return jsonify({"success": False, "error": 500, "message": "internal server error"}), 500
 
     return app
 

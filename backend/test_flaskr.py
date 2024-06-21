@@ -33,6 +33,20 @@ class TriviaTestCase(unittest.TestCase):
     Write at least one test for each test for successful operation and for expected errors.
     """
 
+    def test_get_categories(self):
+        res = self.client().get("/categories")
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data["success"], True)
+        self.assertTrue(data['categories'])
+
+    def test_method_not_allowed_get_categories(self):
+        res = self.client().post("/categories")
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 405)
+        self.assertEqual(data["success"], False)
+        self.assertTrue(data["message"], "Method not allowed")
+
     def test_get_questions(self):
         res = self.client().get("/questions")
         data = json.loads(res.data)
@@ -50,7 +64,6 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["success"], False)
         self.assertEqual(data["message"], "bad request")
 
-    # todo
     def test_delete_question(self):
         res = self.client().delete("/questions/4")
         data = json.loads(res.data)
@@ -77,14 +90,14 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(data['questions'])
         self.assertEqual(data['total_questions'], 2)
 
-    # todo
+
     def test_404_error_search_question(self):
         search = {'searchTerm': 'no match found', }
         res = self.client().post('/search', json=search)
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 404)
         self.assertEqual(data['success'], False)
-        self.assertEqual(data['message'], 'Resource not found')
+        self.assertEqual(data['message'], 'resource not found')
 
     def test_add_question(self):
         new_question = {"question": "new question", "answer": "answer1", "category": 1, "difficulty": 1}
@@ -119,7 +132,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], True)
         self.assertTrue(data['question'])
 
-    def test_get_quiz(self):
+    def test_404_error_get_quiz(self):
         res = self.client().post('/quizzes', json={'previous_questions':[],'quiz_category': {'type': 'abc', 'id': 100}})
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 404)
