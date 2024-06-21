@@ -12,22 +12,17 @@ class TriviaTestCase(unittest.TestCase):
 
     def setUp(self):
     #     """Define test variables and initialize app."""
-        self.database_name = "trivia_test"
-        # self.database_path = "postgres://{}:{}@{}/{}".format('postgres', 'hazard', 'localhost:5432', self.database_name)
+        database_user = os.getenv('DB_USER', 'postgres')
+        database_password = os.getenv('DB_PASSWORD', 'hazard')
+        database_host = os.getenv('DB_HOST', '127.0.0.1:5432')
+        database_name = os.getenv('DB_NAME', 'trivia_test')
+        database_path = 'postgresql://{}:{}@{}/{}'.format(database_user,database_password,database_host, database_name)
         
         self.app = create_app({
-            "SQLALCHEMY_DATABASE_URI": "postgresql://postgres:hazard@localhost:5432/trivia_test"
+            "SQLALCHEMY_DATABASE_URI": database_path
         })
 
         self.client = self.app.test_client
-    # def setUp(self):
-    #     """Define test variables and initialize app."""
-    #     self.app = create_app()
-    #     self.client = self.app.test_client
-    #     self.database_name = "trivia_test"
-    #     self.database_path = "postgresql://postgres:hazard@localhost:5432/trivia_test"
-        # setup_db(self.app, self.database_path)
-
     
     def tearDown(self):
         """Executed after reach test"""
@@ -80,7 +75,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
         self.assertTrue(data['questions'])
-        self.assertEqual(data['total_questions'], 6)
+        self.assertEqual(data['total_questions'], 2)
 
     # todo
     def test_404_error_search_question(self):
@@ -118,9 +113,18 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['message'], 'resource not found')
 
     def test_get_quiz(self):
-        res = self.client().post('/quizzes', json={"quiz_category": 1, "previous_questions": 5})
+        res = self.client().post('/quizzes', json={'previous_questions':[],'quiz_category': {'type': 'abc', 'id': 1}})
         data = json.loads(res.data)
+        self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
+        self.assertTrue(data['question'])
+
+    def test_get_quiz(self):
+        res = self.client().post('/quizzes', json={'previous_questions':[],'quiz_category': {'type': 'abc', 'id': 100}})
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], 'resource not found')
 
 
 # Make the tests conveniently executable

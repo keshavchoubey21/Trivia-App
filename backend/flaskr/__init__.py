@@ -106,7 +106,8 @@ def create_app(test_config=None):
                     'categories': categories_dict
                 }
             )
-        except:
+        except Exception as e:
+            print(e)
             abort(400)
 
     """
@@ -126,7 +127,8 @@ def create_app(test_config=None):
             question.delete()
             return jsonify(
                 {
-                    'success': True
+                    'success': True,
+                    'questionDeleted': id
                 }
             )
         except:
@@ -148,7 +150,14 @@ def create_app(test_config=None):
     def add_question():
         body = request.get_json()
         try:
-            add_question = Question(question=body.get('question'), answer=body.get('answer'), difficulty=body.get('difficulty'), category=body.get('category'))
+            question=body.get('question')
+            answer=body.get('answer')
+            difficulty=body.get('difficulty')
+            category=body.get('category')
+            if(question is None or answer is None or difficulty is None or category is None):
+                abort(400)
+            
+            add_question = Question(question, answer, difficulty, category)
             add_question.insert()
             
             return jsonify(
@@ -227,24 +236,29 @@ def create_app(test_config=None):
     @app.route('/quizzes', methods=["POST"])
     def get_quiz():
         try:
-            request = request.get_json()
-            previous_question = request.get('previous_questions')
-            category = request.get('quiz_category')
+            body = request.get_json()
+            previous_questions = body.get('previous_questions', [])
+            category = body.get('quiz_category')
+            category_id = category['id']
+            print(category)
 
-            if category:
-                questions = Question.query.filter(Question.category == category).filter(Question.id.not_in(previous_question)).all()
+            if category_id !=0:
+                questions = Question.query.filter(Question.category == category_id,Question.id.notin_(previous_questions)).all()
             else:
-                questions = Question.query.filter(Question.id.not_in(previous_question)).all()
+                questions = Question.query.filter(Question.id.not_in(previous_questions)).all()
 
             if len(questions) == 0:
                 abort(404)
-            
-            return jsonify({
+
+            quiz_question = {
                 'success': True,
-                'question': random.choice(questions).format()
-            })
-        except:
-            abort(400)
+                'question': random.choice(questions).format()['question']
+            }
+            print(quiz_question)
+            return jsonify(quiz_question)
+        except Exception as e:
+            print(e)
+            abort(404)
         
 
 
