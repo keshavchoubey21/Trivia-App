@@ -156,8 +156,8 @@ def create_app(test_config=None):
             category=body.get('category')
             if(question is None or answer is None or difficulty is None or category is None):
                 abort(400)
-            
-            add_question = Question(question, answer, difficulty, category)
+            #resolving erorr of category
+            add_question = Question(question=question, answer=answer, difficulty=difficulty, category=category)
             add_question.insert()
             
             return jsonify(
@@ -183,11 +183,11 @@ def create_app(test_config=None):
                 if len(questions) ==0:
                     abort(404)
             
-                currentQuestions = paginate_questions(request, questions)
+                currentQuestions = [question.format() for question in questions]
                 return jsonify({
                     'success': True,
                     'questions': currentQuestions,
-                    'total_questions': len(questions)
+                    'totalQuestions': len(questions)
                 })
             else:
                 abort(404)
@@ -246,20 +246,24 @@ def create_app(test_config=None):
             category_id = category['id']
             print(category)
 
-            if category_id !=0:
+            if category_id:
                 questions = Question.query.filter(Question.category == category_id,Question.id.notin_(previous_questions)).all()
+                print(questions)
             else:
                 questions = Question.query.filter(Question.id.not_in(previous_questions)).all()
 
             if len(questions) == 0:
                 abort(404)
 
-            quiz_question = {
+            question = random.choice(questions).format()['question']
+            print({
                 'success': True,
-                'question': random.choice(questions).format()['question']
-            }
-            print(quiz_question)
-            return jsonify(quiz_question)
+                'question': question
+            })
+            return jsonify({
+                'success': True,
+                'question': question
+            })
         except Exception as e:
             print(e)
             abort(404)
